@@ -3,5 +3,30 @@
   {% block content %}
 
   <h1>Testing template extension</h1>
-  
+  <form>
+    <p>
+    <label for="name">Name:
+      <br>
+      <input type="text" id="name" name="username">
+    </label>
+    </p>
+    <p>
+    <label for="password">Password:
+      <br>
+      <input type="password" id="password" name="password">
+    </label>
+    </p>
+    <p>
+    <label for="vpwd">Verify Password:
+      <br>
+      <input type="password" id="vpwd" name="vpwd">
+    </label>
+    </p>
+    <p>
+    <label for="email">Email:
+      <br>
+      <input type="email" id="email" name="email">
+    </label>
+    </p>
+  </form>
   {% endblock %}
