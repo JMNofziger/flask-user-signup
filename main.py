@@ -1,4 +1,5 @@
 from flask import Flask, request, redirect
+import sys
 import html 
 import os 
 import jinja2
@@ -11,27 +12,103 @@ app.config["DEBUG"] = True
 
 @app.route("/")
 def index():
+    #print('Index', file=sys.stderr)
     template=jinja_env.get_template("signup.html")
-    return template.render(title="Hey, what's up?")
+    return template.render()
 
-### Validation rules
+def check_email_format(email):
+    # check that provided email is valid format -- has a single @, a single .
+    def restrict_char(symbol,string):
+        counter=0
+        for char in string:
+            if char == symbol:
+                counter=counter+1
+            else:
+                continue
 
-# If the user's form submission is not valid, you should reject it and re-render the form with some feedback to inform the user of what they did wrong. The following things should trigger an error:
-# The user leaves any of the following fields empty: username, password, verify password.
-# The user's username or password is not valid -- for example, it contains a space character or it consists of less than 3 characters or more than 20 characters (e.g., a username or password of "me" would be invalid).
-# The user's password and password-confirmation do not match.
-# The user provides an email, but it's not a valid email. Note: the email field may be left empty, but if there is content in it, then it must be validated. The criteria for a valid email address in this assignment are that it has a single @, a single ., contains no spaces, and is between 3 and 20 characters long.
+        if counter>1:
+            error = "Email input may only have one @ and a single period (.)"
+            return error
+        else:
+            error=""
+            return error
 
+    error=restrict_char('@',email)
+    error+=restrict_char('.',email)
+    return error
 
-### Other rules
+# returns error string for printing to variable place holder
+def validate_input(form_input):
+    # check length -- all fields must be between 3 and 20 char 
+    # check for restricted characters - no spaces
+    # check for completion of all fields
 
-# Each feedback message should be next to the field that it refers to.
+    #user_array = [username, password, verified password]
+    if form_input == "":
+        error="This field must be filled." 
+        return error
+    elif len(form_input)<3 or len(form_input)>20:
+        error="Input must be between 3 and 20 characters long."
+        return error
+    elif " " in form_input:
+        error="Input must not include any whitespace"
+        return error
+    else: 
+        error=""
+        return error 
 
-# For the username and email fields, you should preserve what the user typed, so they don't have to retype it. With the password fields, you should clear them, for security reasons.
+@app.route('/add-user', methods=['POST'])
+def add_user():
+    uname=request.form['username']
+    pwd=request.form['password']
+    vpwd=request.form['vpwd']
+    email=request.form['email']
+  
+    # basic rule validation
+    uname_error=validate_input(uname)
+    pwd_error=validate_input(pwd)
+    vpwd_error=validate_input(vpwd)
+    match_err=""
+    
+    # verify that password input matches
+    if vpwd != pwd:
+        match_err="Passwords must match."
+    else:
+        match_err=""
 
-# If all the input is valid, then you should show the user a welcome page that uses the username input to display a welcome message of: "Welcome, [username]!"
+    # email validation
+    if email != "":
+        email_error=validate_input(email)
+        email_error+=check_email_format(email)
+    else:
+        email_error=""
+    
+    # put all errors in array to make it easy to loop through
+    error_array=[uname_error,pwd_error,vpwd_error,email_error,match_err]
 
-# Use templates (one for the index/home page and one for the welcome page) to render the HTML for your web app.
+    # loop through error array and catch if there is any error
+    for x in error_array:
+        if (x != ""):
+            error=True
+            break;
+        else:
+            error=False
 
+    # If no error then welcome user, otherwise force user to form again with error messages
+    if error==False:
+        template=jinja_env.get_template("new-welcome.html")
+        return template.render(user=uname)
+    else:
+        # if errors, must identify field to which error is printed 
+        template=jinja_env.get_template("signup.html")
+        return template.render(
+                username=uname,
+                email=email,
+                uname_error=uname_error,
+                pwd_error=pwd_error,
+                vpwd_error=vpwd_error,
+                email_error=email_error,
+                match_error=match_err
+                )
 
 app.run()
